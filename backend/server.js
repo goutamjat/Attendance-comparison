@@ -14,22 +14,25 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 const upload = multer({ dest: uploadDir });
 
 // Function to run Python OCR script
-function runPythonOCR(filePath, outputFilePath, callback) {
+function runPythonOCR(filePath, outputFilePath) {
     const pythonScriptPath = path.join(__dirname, 'ocr.py'); // Python script path
     
-    // Wrap paths in quotes to handle spaces
-    const command = `python "${pythonScriptPath}" "${filePath}" "${outputFilePath}"`;
+    // Return a new Promise to handle async behavior
+    return new Promise((resolve, reject) => {
+        // Wrap paths in quotes to handle spaces
+        const command = `python "${pythonScriptPath}" "${filePath}" "${outputFilePath}"`;
 
-    exec(command, (error, stdout, stderr) => {
-        if (error) {
-            callback(error, null);
-            return;
-        }
-        if (stderr) {
-            callback(stderr, null);
-            return;
-        }
-        callback(null, stdout);
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                reject(error); // Reject the Promise if there’s an error
+                return;
+            }
+            if (stderr) {
+                reject(stderr); // Reject if there’s an error output
+                return;
+            }
+            resolve(stdout); // Resolve the Promise if successful
+        });
     });
 }
 
@@ -40,41 +43,34 @@ app.post('/compare', upload.fields([{ name: 'subjectSheets' }, { name: 'commonSh
 
     try {
         const outputJSON = path.join(uploadDir, 'extracted_data.json');
-        runPythonOCR(commonFile, outputJSON, async (err, result) => {
-            if (err) {
-                console.error('Error in OCR execution:', err);
-                res.status(500).send({ error: 'OCR processing failed.' });
-                return;
-            }
 
-            try {
-                const extractedData = JSON.parse(fs.readFileSync(outputJSON, 'utf-8')).extracted_text;
-                
-                const subjectNameMatch = extractedData.match(/BATCH: (\w+)/);
-                const subjectName = subjectNameMatch ? subjectNameMatch[1] : 'UnknownSubject';
+        // Await the result from the Python OCR process
+        await runPythonOCR(commonFile, outputJSON);
 
-                if (!subjectName) {
-                    console.error('Subject name not found in extracted data.');
-                    res.status(500).send({ error: 'Subject name not found in extracted data.' });
-                    return;
-                }
+        // Now handle the extracted data
+        const extractedData = JSON.parse(fs.readFileSync(outputJSON, 'utf-8')).extracted_text;
+        
+        const subjectNameMatch = extractedData.match(/BATCH: (\w+)/);
+        const subjectName = subjectNameMatch ? subjectNameMatch[1] : 'UnknownSubject';
 
-                console.log(`Subject name extracted: ${subjectName}`);
+        if (!subjectName) {
+            console.error('Subject name not found in extracted data.');
+            res.status(500).send({ error: 'Subject name not found in extracted data.' });
+            return;
+        }
 
-                // Create the table for the subject
-                await createTableForSubject(subjectName);
+        console.log(`Subject name extracted: ${subjectName}`);
 
-                // Process the student data and insert into the database
-                const insertedData = await processStudentData(extractedData, subjectName);
+        // Create the table for the subject
+        await createTableForSubject(subjectName);
 
-                // Return the inserted records as an array
-                res.status(200).send(insertedData);
-                console.log(`Data successfully inserted for ${insertedData.length} students.`);
-            } catch (jsonParseError) {
-                console.error('Error parsing extracted data:', jsonParseError);
-                res.status(500).send({ error: 'Failed to process extracted data.' });
-            }
-        });
+        // Process the student data and insert into the database
+        const insertedData = await processStudentData(extractedData, subjectName);
+
+        // Return the inserted records as an array
+        res.status(200).send(insertedData);
+        console.log(`Data successfully inserted for ${insertedData.length} students.`);
+        
     } catch (error) {
         console.error('Error during processing:', error);
         res.status(500).send({ error: 'Processing failed' });

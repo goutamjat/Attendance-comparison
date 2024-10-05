@@ -6,8 +6,6 @@ import os
 import numpy as np
 from PIL import Image
 
-from PIL import Image
-
 def preprocess_image(image_path, output_path='preprocessed_image.png'):
     # Open the image using PIL
     img = Image.open(image_path)
@@ -22,8 +20,6 @@ def preprocess_image(image_path, output_path='preprocessed_image.png'):
     bw_img.save(output_path)
 
     return output_path
-
-
 
 def compress_image(image_path, output_path, target_size_kb=1000, quality=85):
     img = Image.open(image_path)
