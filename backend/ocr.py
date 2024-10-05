@@ -6,13 +6,24 @@ import os
 import numpy as np
 from PIL import Image
 
-def preprocess_image(image_path, output_path='preprocessed_image.jpg'):
-    img = cv2.imread(image_path)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    _, binary_img = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
-    processed_img = cv2.fastNlMeansDenoising(binary_img, h=30)
-    cv2.imwrite(output_path, processed_img)
+from PIL import Image
+
+def preprocess_image(image_path, output_path='preprocessed_image.png'):
+    # Open the image using PIL
+    img = Image.open(image_path)
+
+    # Convert to grayscale first
+    gray_img = img.convert('L')
+
+    # Convert to black and white using 1-bit per pixel (thresholding)
+    bw_img = gray_img.point(lambda x: 0 if x < 128 else 255, '1')
+
+    # Save the black and white image (1-bit)
+    bw_img.save(output_path)
+
     return output_path
+
+
 
 def compress_image(image_path, output_path, target_size_kb=1000, quality=85):
     img = Image.open(image_path)
