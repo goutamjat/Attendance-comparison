@@ -10,14 +10,17 @@
     <div class="container">
         <h1>Attendance Comparison Tool</h1>
         <form id="uploadForm">
-            <label for="subjectSheets">Upload Subject Attendance Sheets:</label>
-            <input type="file" id="subjectSheets" name="subjectSheets" accept=".pdf,.jpg,.jpeg,.png" multiple required>
-            
+            <label for="subjectName">Enter Subject Name:</label>
+            <input type="text" id="subjectName" name="subjectName" required>
+        
+            <label for="subjectSheet">Upload Subject Attendance Sheet:</label>
+            <input type="file" id="subjectSheet" name="subjectSheet" accept=".pdf,.jpg,.jpeg,.png" required>
+        
             <label for="commonSheet">Upload Common Attendance Sheet:</label>
             <input type="file" id="commonSheet" name="commonSheet" accept=".pdf,.jpg,.jpeg,.png" required>
-            
+        
             <button type="submit">Compare Attendance</button>
-        </form>
+        </form>        
         <div id="result"></div>
     </div>
 

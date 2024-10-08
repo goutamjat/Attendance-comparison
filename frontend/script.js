@@ -23,25 +23,24 @@ document.getElementById('uploadForm').addEventListener('submit', async function 
         // Handle any errors that occurred during fetch or parsing
         console.error('Error:', error);
         const resultDiv = document.getElementById('result');
-        resultDiv.innerHTML = '<p>Error: Unable to fetch or process data.</p>';
+        resultDiv.innerHTML = '<p>/</p>';//Error: Unable to fetch or process data.
     }
 });
 
 function displayResult(data) {
-    console.log(data); // Inspect the data structure
 
-    // Find the result container element
-    const resultDiv = document.getElementById('result');
+    // // Find the result container element
+    // const resultDiv = document.getElementById('result');
 
-    // Clear previous results
-    resultDiv.innerHTML = '';
+    // // Clear previous results
+    // resultDiv.innerHTML = '';
 
     // Check if data is an array
     if (Array.isArray(data)) {
         // Display each item in the data array
         data.forEach(item => {
             const div = document.createElement('div');
-            div.textContent = `Student: ${item.name}, Classes Held: ${item.classes_held}, Classes Attended: ${item.classes_attended}`;
+            div.textContent = `Student: ${item.name}, Classes Held: ${item.total_classes_held}, Classes Attended: ${item.total_classes_attended}`;
             resultDiv.appendChild(div);
         });
     } else {
