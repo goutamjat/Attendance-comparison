@@ -21,23 +21,33 @@ def preprocess_image(image_path, output_path='preprocessed_image.png'):
 
     return output_path
 
-def compress_image(image_path, output_path, target_size_kb=1000, quality=85):
+def compress_image(image_path, output_path, target_size_kb=1024, initial_quality=85):
     img = Image.open(image_path)
-    original_size = os.path.getsize(image_path) / 1024
-    if original_size <= target_size_kb:
-        img.save(output_path)
-        return
-    quality_value = quality
-    while True:
-        img.save(output_path, "JPEG", quality=quality_value)
-        compressed_size = os.path.getsize(output_path) / 1024
-        if compressed_size <= target_size_kb:
-            break
+    quality_value = initial_quality
+    img.save(output_path, "JPEG", quality=quality_value)
+    
+    compressed_size_kb = os.path.getsize(output_path) / 1024
+    print(f"Initial compressed size: {compressed_size_kb} KB")
+
+    while compressed_size_kb > target_size_kb and quality_value > 10:
         quality_value -= 5
-        if quality_value < 10:
-            break
+        img.save(output_path, "JPEG", quality=quality_value)
+        compressed_size_kb = os.path.getsize(output_path) / 1024
+        print(f"Compressed size after reducing quality to {quality_value}: {compressed_size_kb} KB")
+
+    if compressed_size_kb > target_size_kb:
+        print(f"Warning: Unable to compress image below {target_size_kb} KB. Current size: {compressed_size_kb} KB")
+        return None
+
+    return output_path
+
 
 def extract_text_from_image(image_path, api_key):
+    file_size_kb = os.path.getsize(image_path) / 1024
+    if file_size_kb > 1024:
+        print(f"Error: File size exceeds 1024 KB. Current size: {file_size_kb} KB")
+        return None
+    
     url = 'https://api.ocr.space/parse/image'
     with open(image_path, 'rb') as image_file:
         payload = {'apikey': api_key, 'isTable': 'true', 'OCREngine': '2'}
@@ -55,6 +65,7 @@ def save_text_to_json(text, output_file):
     with open(output_file, 'w') as json_file:
         json.dump(data, json_file, indent=4)
     print(f"Extracted text saved to {output_file}")
+
 
 if __name__ == '__main__':
     image_path = sys.argv[1]
