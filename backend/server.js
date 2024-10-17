@@ -6,7 +6,7 @@ const fs = require('fs');
 const { exec } = require('child_process');
 const { createTableForSubject, processStudentData } = require('./database');
 const {extractAttendanceForSubject} = require('./extractAttendance');
-const {runPythonOCR} = require('./runPythonOCR');
+const {runPythonOCR} = require('./functions');
 const app = express();
 
 
