@@ -6,7 +6,6 @@ const fs = require('fs');
 const { exec } = require('child_process');
 const { createTableForSubject, processStudentData } = require('./database');
 const {extractAttendanceForSubject} = require('./extractAttendance');
-const {runPythonOCR} = require('./functions');
 const app = express();
 
 
@@ -30,19 +29,13 @@ app.post('/compare', upload.fields([{ name: 'subjectSheet' }, { name: 'commonShe
     const subjectName = req.body.subjectName;
 
     try {
-        const commonPdfText = await extractTextFromPDF(commonFile);
-        const attendanceForSubject = extractAttendanceForSubject(commonPdfText, subjectName);
-
-
-
-
         //subject attendance sheet
-        // const outputJSON = path.join(uploadDir, 'subject_data.json');
-        // await runPythonOCR(subjectFile, outputJSON);
-        // const subjectData = JSON.parse(fs.readFileSync(outputJSON, 'utf-8')).extracted_text;
+        const outputJSON = path.join(uploadDir, 'subject_data.json');
+        await runPythonOCR(subjectFile, outputJSON);
+        const subjectData = JSON.parse(fs.readFileSync(outputJSON, 'utf-8')).extracted_text;
 
-        // await createTableForSubject(subjectName);
-        // const insertedData = await processStudentData(subjectData, subjectName);
+        await createTableForSubject(subjectName);
+        const insertedData = await processStudentData(subjectData, subjectName);
 
 
         console.log('Extracted attendance data for subject:', subjectName, attendanceForSubject);
@@ -59,6 +52,28 @@ app.post('/compare', upload.fields([{ name: 'subjectSheet' }, { name: 'commonShe
     }
 });
 
+function runPythonOCR(filePath, outputFilePath) {
+    const pythonScriptPath = path.join(__dirname, 'ocr.py');
+    
+    return new Promise((resolve, reject) => {
+        const command = `python "${pythonScriptPath}" "${filePath}" "${outputFilePath}"`;
+
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                console.error('Error in Python OCR script:', error);
+                reject(error);
+                return;
+            }
+            if (stderr) {
+                console.error('Python script stderr:', stderr);
+                reject(stderr);
+                return;
+            }
+            console.log('Python script stdout:', stdout);
+            resolve(stdout);
+        });
+    });
+}
 app.listen(3000, () => {
     console.log('Server is running on port 3000');
 });
