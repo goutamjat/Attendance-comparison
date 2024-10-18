@@ -36,11 +36,30 @@ def extract_text_from_image(image_path, api_key):
         payload = {'apikey': api_key, 'isTable': 'true', 'OCREngine': '2'}
         files = {'filename': image_file}
         response = requests.post(url, data=payload, files=files)
-        result = response.json()
-        if result['IsErroredOnProcessing']:
-            print(f"Error: {result['ErrorMessage']}")
+
+        # Check for successful response
+        if response.status_code != 200:
+            print(f"API returned a non-200 status code: {response.status_code}")
+            print(f"Response Content: {response.text}")
             return None
-        extracted_text = result['ParsedResults'][0]['ParsedText']
+
+        # Attempt to parse JSON response
+        try:
+            result = response.json()
+        except ValueError as e:
+            print(f"Error parsing JSON: {e}")
+            print(f"Response Content: {response.text}")
+            return None
+
+        if 'IsErroredOnProcessing' in result and result['IsErroredOnProcessing']:
+            print(f"Error: {result.get('ErrorMessage')}")
+            return None
+
+        if 'ParsedResults' not in result or not result['ParsedResults']:
+            print("No ParsedResults found in the response.")
+            return None
+
+        extracted_text = result['ParsedResults'][0].get('ParsedText', '')
         return extracted_text
 
 def save_text_to_json(text, output_file):
@@ -52,7 +71,7 @@ def save_text_to_json(text, output_file):
 if __name__ == '__main__':
     image_path = sys.argv[1]
     output_file = sys.argv[2]
-    api_key = 'K81017824888957'
+    api_key = 'K81017824888957'  # Replace with your actual OCR.space API key
 
     preprocessed_image_path = preprocess_image(image_path)
     compressed_output_path = 'compressed_preprocessed_image.jpg'
